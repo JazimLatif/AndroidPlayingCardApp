@@ -5,11 +5,14 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -23,21 +26,30 @@ import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity() {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
         setContent {
             MainScreen()
+
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen() {
     var isSorted by remember { mutableStateOf(false) }
+    var animate by remember { mutableStateOf(false) }
 
-    val onShake: () -> Unit = {
+    val alterDeck: () -> Unit = {
         isSorted = !isSorted
+    }
+
+    val playAnimation: () -> Unit = {
+        animate = !animate
     }
 
     Column(
@@ -46,15 +58,20 @@ fun MainScreen() {
         modifier = Modifier.fillMaxSize()
     ){
         Text(if (isSorted) "Sorted" else "Shuffled", fontSize = 50.sp)
+        Row {
+            Text(text = if (animate) "animated!" else "")
+        }
     }
 
-    ShakeEventListener(onShake)
+    Accelerometer(alterDeck, playAnimation)
+    Gyroscope()
 }
 
 @Composable
-fun ShakeEventListener(onShake: () -> Unit) {
+fun Accelerometer(onShake: () -> Unit, onTilt: () -> Unit) {
 
     val SHAKE_THRESHOLD = 2.5f
+    val TILT_THRESHOLD = 2.5f
     val SHAKE_SLOP_TIME_MS = 500
 
     var shakeTimestamp: Long = 0
@@ -70,8 +87,7 @@ fun ShakeEventListener(onShake: () -> Unit) {
         val sensorEventListener = object: SensorEventListener {
 
             override fun onSensorChanged(event: SensorEvent?) {
-                // More kotlin-y should be event?.let
-                if (event != null) {
+                event?.let {
                     for (i in event.values) {
 
                         val x = event.values[0]
@@ -84,7 +100,6 @@ fun ShakeEventListener(onShake: () -> Unit) {
 
                         // Magnitudee of the vector of shake
                         val gForce = sqrt(gX*gX + gY*gY + gZ*gZ)
-
                         if (gForce > SHAKE_THRESHOLD) {
                             val now = System.currentTimeMillis()
 
@@ -94,6 +109,13 @@ fun ShakeEventListener(onShake: () -> Unit) {
                             shakeTimestamp = now
 
                             onShake()
+                        }
+
+                        val tiltVector = //calculate tilt
+                        else {
+                            if (tiltVector >= TILT_THRESHOLD) {
+                                onTilt()
+                            }
                         }
                     }
                 }
@@ -110,7 +132,6 @@ fun ShakeEventListener(onShake: () -> Unit) {
             sensorManager.unregisterListener(sensorEventListener)
         }
     }
-
 }
 
 @Preview(showSystemUi = true)
