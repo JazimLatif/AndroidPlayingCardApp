@@ -96,7 +96,6 @@ fun MainScreen() {
             2.3f
         ))
     Accelerometer(alterDeck)
-    Gyroscope()
 }
 
 
